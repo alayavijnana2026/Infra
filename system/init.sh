@@ -193,6 +193,7 @@ disable_firewall() {
 
         if command -v ufw >/dev/null 2>&1; then
             ufw --force disable || true
+            systemctl stop ufw
             systemctl disable ufw >/dev/null 2>&1 || true
         fi
 
@@ -428,6 +429,7 @@ install_docker() {
             containerd.io \
             docker-buildx-plugin \
             docker-compose-plugin
+        cp  /usr/libexec/docker/cli-plugins/docker-compose /usr/local/sbin
     else
         dnf install -y dnf-plugins-core
         dnf config-manager --add-repo \
@@ -445,9 +447,14 @@ install_docker() {
 configure_timezone() {
     log "Configure Timezone"
     timedatectl set-timezone Asia/Shanghai
+    # timedatectl set-timezone Asia/Bangkok
     if [ "$FAMILY" = "debian" ]; then
         apt install -y chrony
+        sudo apt install -y locales
         systemctl enable --now chrony
+        sudo locale-gen en_US.UTF-8
+        sudo locale-gen en_GB.UTF-8
+        sudo update-locale LANG=en_US.UTF-8 LC_TIME=C
     else
         dnf install -y chrony
         systemctl enable --now chronyd
@@ -497,6 +504,9 @@ EOF
     sleep 3
     docker inspect node_exporter >/dev/null 2>&1 || \
         fail "node_exporter start failed"    
+        # systemctl daemon-reload
+        # systemctl enable node_exporter
+        # systemctl restart node_exporter
 }
 
 install_edge_monitor() {
@@ -565,6 +575,7 @@ main() {
     if [ "$MODE" = "base" ] || [ "$MODE" = "init" ]; then
     echo "setup_NoahsArk"
         setup_NoahsArk
+        disable_firewall
     fi
     # setup_NoahsArk
     update_system
