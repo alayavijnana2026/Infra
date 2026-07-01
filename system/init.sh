@@ -371,7 +371,48 @@ net.core.somaxconn = 4096
 EOF
     sysctl --system
 }
+#!/bin/bash
 
+disable_ubuntu_auto_update() {
+    echo ">>> Stop apt timers..."
+    systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null
+    systemctl disable apt-daily.timer apt-daily-upgrade.timer 2>/dev/null
+    systemctl mask apt-daily.service apt-daily-upgrade.service 2>/dev/null
+
+    echo ">>> Stop unattended-upgrades..."
+    systemctl stop unattended-upgrades 2>/dev/null
+    systemctl disable unattended-upgrades 2>/dev/null
+
+    if dpkg -s unattended-upgrades >/dev/null 2>&1; then
+        apt-get purge -y unattended-upgrades
+    fi
+
+    echo ">>> Disable APT periodic..."
+    cat >/etc/apt/apt.conf.d/99disable-auto-upgrades <<EOF
+APT::Periodic::Enable "0";
+APT::Periodic::Update-Package-Lists "0";
+APT::Periodic::Download-Upgradeable-Packages "0";
+APT::Periodic::AutocleanInterval "0";
+APT::Periodic::Unattended-Upgrade "0";
+EOF
+
+    rm -f /etc/apt/apt.conf.d/20auto-upgrades
+
+    echo ">>> Disable release upgrade..."
+    if [ -f /etc/update-manager/release-upgrades ]; then
+        sed -i 's/^Prompt=.*/Prompt=never/' /etc/update-manager/release-upgrades
+    fi
+
+    echo ">>> Disable MOTD update notice..."
+    chmod -x /etc/update-motd.d/90-updates-available 2>/dev/null
+    chmod -x /etc/update-motd.d/91-release-upgrade 2>/dev/null
+    chmod -x /etc/update-motd.d/50-motd-news 2>/dev/null
+
+    echo
+    echo "========================================="
+    echo "Ubuntu automatic updates have been disabled."
+    echo "========================================="
+}
 install_docker() {
     log "Install Docker"
     if command -v docker >/dev/null 2>&1; then
