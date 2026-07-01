@@ -354,7 +354,23 @@ root soft nofile 1048576
 root hard nofile 1048576
 * soft nproc 65535
 * hard nproc 65535
+root soft nproc 65535
+root hard nproc 65535
 EOF
+    mkdir -p /etc/systemd/system.conf.d
+cat >/etc/systemd/system.conf.d/99-custom.conf <<EOF
+[Manager]
+DefaultLimitNOFILE=1048576
+DefaultLimitNPROC=65535
+EOF
+mkdir -p /etc/systemd/user.conf.d
+
+    cat >/etc/systemd/user.conf.d/99-custom.conf <<EOF
+[Manager]
+DefaultLimitNOFILE=1048576
+DefaultLimitNPROC=65535
+EOF
+    systemctl daemon-reexec
 }
 
 configure_sysctl() {
