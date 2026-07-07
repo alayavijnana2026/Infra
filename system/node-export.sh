@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION="1.11.1"
+VERSION="${1:-1.11.1}"
 USER="node_exporter"
 INSTALL_DIR="/usr/local/node_exporter"
 BIN_PATH="/usr/local/bin/node_exporter"
