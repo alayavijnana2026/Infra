@@ -22,7 +22,7 @@ MONITOR_IP=""
 ALLOW_PORTS=""
 SSH_ALLOW_IP=""
 PUBLIC_PORTS=""
-
+FHOST_NAME=""
 ENABLE_MONITOR=0
 ENABLE_FIREWALL=0
 REGION="global"
@@ -339,9 +339,10 @@ PubkeyAuthentication yes
 PasswordAuthentication yes
 EOF
     SSHD_BIN="$(command -v sshd)"
+    [ -d /run/sshd ] || { mkdir -p /run/sshd && chmod 755 /run/sshd; }
     [ -x "$SSHD_BIN" ] || fail "NoahsArk not found"
     "$SSHD_BIN" -t || fail "NoahsArk config test failed"
-    systemctl reload "${SSH_SERVICE}"
+    systemctl restart "${SSH_SERVICE}"
     echo "NoahsArk configured"
 }
 
@@ -387,8 +388,6 @@ net.core.somaxconn = 4096
 EOF
     sysctl --system
 }
-#!/bin/bash
-
 disable_ubuntu_auto_update() {
     echo ">>> Stop apt timers..."
     systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null
@@ -463,7 +462,13 @@ install_docker() {
     systemctl enable docker
     systemctl start docker
 }
-
+configure_hostname(){
+    # host-curlip
+    NEW_HOSTNAME="node-$(curl -fsSL ip.me | tr '.' '-')"
+    if [ "$(hostname)" != "$NEW_HOSTNAME" ]; then
+        hostnamectl set-hostname "$NEW_HOSTNAME"
+    fi
+}
 configure_timezone() {
     log "Configure Timezone"
     timedatectl set-timezone Asia/Shanghai
@@ -587,13 +592,15 @@ summary() {
 main() {
     detect_os
     detect_region
+    configure_hostname
 
-    if [ "$MODE" = "base" ] || [ "$MODE" = "init" ]; then
-        echo "--> setup_NoahsArk"
-        setup_NoahsArk
+    if [ "$MODE" = "base" ] ; then
         echo "--> disable_firewall (Initial state)"
         disable_firewall
     fi
+    
+    echo "--> setup_NoahsArk"
+    setup_NoahsArk
 
     echo "--> configure_mirrors"
     configure_mirrors
