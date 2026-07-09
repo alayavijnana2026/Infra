@@ -520,9 +520,12 @@ services:
         network_mode: host
         pid: host
         restart: unless-stopped
+        cpus: 0.10
+        mem_limit: 72m
+        mem_reservation: 32m
         volumes:
         - '/:/host:ro,rslave'
-        - '/var/lib/node_exporter/textfile_collector:/textfile:ro'    
+        - '/var/lib/node_exporter/textfile_collector:/textfile:ro'
 EOF
     cd /opt/node-exporter
     docker compose pull
