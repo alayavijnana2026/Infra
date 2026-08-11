@@ -1,4 +1,3 @@
-```bash
 install_docker() {
     echo "Install Docker"
 
@@ -107,3 +106,4 @@ install_docker() {
     docker --version
     docker compose version
 }
+install_docker
