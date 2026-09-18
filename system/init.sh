@@ -464,10 +464,27 @@ install_docker() {
 }
 configure_hostname(){
     # host-curlip
-    NEW_HOSTNAME="node-$(curl -fsSL ip.me | tr '.' '-')"
-    if [ "$(hostname)" != "$NEW_HOSTNAME" ]; then
-        hostnamectl set-hostname "$NEW_HOSTNAME"
-    fi
+    # NEW_HOSTNAME="node-$(curl -fsSL ip.me | tr '.' '-')"
+    # if [ "$(hostname)" != "$NEW_HOSTNAME" ]; then
+    #     hostnamectl set-hostname "$NEW_HOSTNAME"
+    # fi
+    HNS="$(
+        curl -s4 --max-time 10 ipinfo.io |
+        awk -F'"' '
+            /"ip"/      { ip=$4 }
+            /"city"/    { city=$4 }
+            /"country"/ { country=$4 }
+            END {
+                gsub(/\./, "-", ip)
+                gsub(/ /, "-", city)
+                print country "-" city "-" ip
+            }
+        '
+    )"
+    if [ -n "$HNS" ]; then
+        hostnamectl set-hostname "$HNS"
+        echo "Hostname set to: $HNS"
+    fi    
 }
 configure_timezone() {
     log "Configure Timezone"
